@@ -1,1 +1,45 @@
+services:
+  mailarchive-app:
+    image: s1t5/mailarchiver:latest
+    restart: unless-stopped
+    environment:
+      # Database Connection
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=MailArchiver;Username=mailuser;Password=masterkey;
 
+      # Authentication Settings
+      - Authentication__Username=admin
+      - Authentication__Password=secure123!
+
+      # TimeZone Settings
+      - TimeZone__DisplayTimeZoneId=Etc/UCT
+    ports:
+      - "5000:5000"
+    networks:
+      - postgres
+    volumes:
+      - /mnt/data/dockers/mail_archiver/data-protection-keys:/app/DataProtection-Keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: MailArchiver
+      POSTGRES_USER: mailuser
+      POSTGRES_PASSWORD: masterkey
+    volumes:
+      - /mnt/data/dockers/mail_archiver/postgres-data:/var/lib/postgresql/data
+    networks:
+      - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mailuser -d MailArchiver"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  postgres:
