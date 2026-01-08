@@ -19,7 +19,8 @@ services:
     volumes:
       - /mnt/data/dockers/mail_archiver/data-protection-keys:/app/DataProtection-Keys
     depends_on:
-      - postgres
+      - postgres:
+        - condition: service_healthy
 
 
   postgres:
