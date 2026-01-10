@@ -9,8 +9,6 @@ services:
       # Do not edit the next line. If you want to change the media storage location on your system, edit the value of UPLOAD_LOCATION in the .env file
       - /mnt/dockers/immich/data_server:/data
       #- ./data/server/etc/localtime:/etc/localtime
-    env_file:
-      - .env
     ports:
       - '2283:2283'
     depends_on:
@@ -36,8 +34,6 @@ services:
     #   service: cpu # set to one of [armnn, cuda, rocm, openvino, openvino-wsl, rknn] for accelerated inference - use the `-wsl` version for WSL2 where applicable
     volumes:
       - /mnt/dockers/immich/data_ml:/cache
-    env_file:
-      - .env
     restart: always
     healthcheck:
       disable: false
