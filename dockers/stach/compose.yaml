@@ -42,6 +42,14 @@ services:
       ## Where to store generated content (screenshots,previews,transcodes,sprites)
       - /mnt/nas4/dockers/stash/generated:/generated
      
-     
-     
+  yt-dlp:
+    image: marcobaobao/yt-dlp-webui:latest
+    container_name: yt-dlp-webui
+    restart: unless-stopped
+    ports:
+      - "3033:3033"
+    volumes:
+      # Use the same 'downloads' folder as Stash
+      - ./downloads:/downloads
+      - ./yt-dlp-config:/config
      
