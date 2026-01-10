@@ -50,6 +50,6 @@ services:
       - "3033:3033"
     volumes:
       # Use the same 'downloads' folder as Stash
-      - ./downloads:/downloads
-      - ./yt-dlp-config:/config
+      - /mnt/nas4/dockers/stash/downloads:/downloads
+      - /mnt/nas4/dockers/stash/yt-dlp-config:/config
      
