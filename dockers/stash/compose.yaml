@@ -2,6 +2,10 @@ services:
   stash:
     image: stashapp/stash:latest
     container_name: stash
+    deploy:
+      placement:
+        constraints:
+          - "node.role == worker"
     restart: unless-stopped
     ## the container's port must be the same with the STASH_PORT in the environment section
     ports:
