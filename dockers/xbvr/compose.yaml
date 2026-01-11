@@ -1,0 +1,18 @@
+
+services:
+  xbvr:
+    image: ghcr.io/xbapps/xbvr:latest
+    container_name: xbvr
+    restart: unless-stopped
+    privileged: true # Helps with hardware acceleration/DLNA discovery
+    ports:
+      - "19999:9999" # Web UI
+      - "19998:9998" # WebSocket/API
+      - "11338:1338" # DLNA (Optional)
+    environment:
+      - PUID=1000 # Replace with your user ID
+      - PGID=1000 # Replace with your group ID
+      - TZ=Etc/UTC
+    volumes:
+      - /mnt/nas4/media2:/videos
+      - /mnt/nas4/dockers/xbvr/config:/root/.config/
