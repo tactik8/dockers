@@ -1,45 +1,67 @@
-
 version: '3.8'
 
 services:
   nocodb:
     image: nocodb/nocodb:latest
+    # NocoDB requires a database to connect to. We'll use PostgreSQL here.
+    # Make sure to replace <NocoDB_Port> with your desired port.
     ports:
-      - "8080:8080"
+      - "8080:8080" # Default NocoDB port, change if needed
+    environment:
+      # Database connection string for NocoDB to connect to PostgreSQL
+      # Replace POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB with your actual values
+      NC_DB: 'pg://postgres_user:postgres_password@postgres:5432/nocodb_db'
+      # Set timezone to Eastern (Canada)
+      TZ: 'America/Toronto'
+      # Set language to en-us
+      LANG: 'en_US.UTF-8'
     volumes:
       # Persistent storage for NocoDB data
-      - nocodb_data:/usr/app/data/
-    environment:
-      - TZ=America/Montreal
-      - LANG=en-us
-      # --- NocoDB Configuration Parameters ---
-      # Uncooment and configure the following to set the initial root user credentials
-      # - NC_ROOT_EMAIL=admin@example.com
-      # - NC_ROOT_PASSWORD=strong_password
-      #
-      # Uncomment and configure the following if you want to connect to an external database (e.g., PostgreSQL)
-      # - NC_DB=pg
-      # - NC_PG_HOST=db_host
-      # - NC_PG_PORT=5432
-      # - NC_PG_USER=db_user
-      # - NC_PG_PASSWORD=db_password
-      # - NC_PG_DATABASE=nocodb
-      # --- End NocoDB Configuration Parameters ---
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: any
+      - /mnt/nas4/dockers/nocodb/data:/usr/app/data
+    depends_on:
+      - postgres
     networks:
-      - nocodb_network
+      - nocodb-net
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.nocodb == true # Adjust node label as per your swarm setup
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
-volumes:
-  nocodb_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /mnt/nas4/dockers/nocodb/data
+  postgres:
+    image: postgres:13
+    environment:
+      # PostgreSQL database configuration
+      # !!! IMPORTANT !!! Replace with strong, unique passwords
+      POSTGRES_DB: 'nocodb_db'
+      POSTGRES_USER: 'postgres_user'
+      POSTGRES_PASSWORD: 'postgres_password'
+      # Set timezone for PostgreSQL
+      TZ: 'America/Toronto'
+    volumes:
+      # Persistent storage for PostgreSQL data
+      - /mnt/nas4/dockers/nocodb/postgres:/var/lib/postgresql/data
+    networks:
+      - nocodb-net
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.nocodb == true # Adjust node label as per your swarm setup
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
 networks:
-  nocodb_network:
+  nocodb-net:
     driver: overlay
+    attachable: true
