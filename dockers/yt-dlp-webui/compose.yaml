@@ -1,29 +1,23 @@
 
 version: '3.8'
-
 services:
   yt-dlp-webui:
     image: tzahi12345/yt-dlp-webui:latest
     container_name: yt-dlp-webui
     ports:
-      - "8080:8080" # Host_PORT:Container_PORT - Change HOST_PORT if needed
+      - "8000:8000" # Host_Port:Container_Port - Change the host port if 8000 is already in use
     volumes:
-      - /mnt/nas4/dockers/yt-dlp-webui/config:/app/config # Configuration files
-      - /mnt/nas4/dockers/yt-dlp-webui/downloads:/app/downloads # Downloaded media files
+      - /mnt/nas4/dockers/yt-dlp-webui/config:/app/config
+      - /mnt/nas4/dockers/yt-dlp-webui/downloads:/app/downloads
     environment:
-      - PUID=1000 # User ID, change to match your user's UID (e.g., `id -u youruser`)
-      - PGID=1000 # Group ID, change to match your user's GID (e.g., `id -g youruser`)
-      - TZ=Europe/Paris # Your timezone, e.g., "America/New_York"
+      - TZ=America/New_York # Set your local timezone, e.g., "Europe/London", "Asia/Tokyo"
+      - APP_PORT=8000       # Port the application listens on inside the container
+      # - PUID=1000         # Optional: User ID for file permissions (e.g., your user ID on the host)
+      # - PGID=1000         # Optional: Group ID for file permissions (e.g., your group ID on the host)
     restart: unless-stopped
+    # Docker Swarm deployment specific configuration
     deploy:
       replicas: 1
-      update_config:
-        parallelism: 2
-        delay: 10s
-      restart_policy:
-        condition: on-failure
-
-# Optional: Define volumes if you want Docker to manage them rather than host paths
-# volumes:
-#   yt-dlp-webui_config:
-#   yt-dlp-webui_downloads:
+      placement:
+        constraints:
+          - node.role == manager # Set to 'manager' or 'worker' to control on which node the service runs
