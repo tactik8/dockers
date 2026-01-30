@@ -1,0 +1,14 @@
+services:
+    openproject:
+        ports:
+            - 8086:80
+        container_name: openproject
+        environment:
+            - OPENPROJECT_HOST__NAME=openproject.tactik8.com
+            - SECRET_KEY_BASE=secret1
+            - OPENPROJECT_HTTPS=true
+            - OPENPROJECT_ADDITIONAL__HOST__NAMES=localhost:8086,127.0.0.1:8086,openproject:8086,192.168.2.253:8086
+        volumes:
+            - /mnt/nas4/dockers/openproject/pgdata:/var/openproject/pgdata
+            - /mnt/nas4/dockers/openproject/assets:/var/openproject/assets
+        image: openproject/openproject:17
