@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  yt-dlp-web-ui:
+    image: tzahi12345/youtubedl-material:latest
+    container_name: yt-dlp-web-ui
+    restart: unless-stopped
+    ports:
+      - "8010:8010" # Default port for YT-DLP Web UI, change if necessary
+    environment:
+      - PUID=1000 # Set your user id (e.g., 1000)
+      - PGID=1000 # Set your group id (e.g., 1000)
+      - TZ=Etc/UTC # Set your timezone (e.g., Europe/London)
+    volumes:
+      - /mnt/nas4/dockers/yt-dlp-web-ui/config:/app/config # Persistent storage for configuration
+      - /mnt/nas4/dockers/yt-dlp-web-ui/downloads:/app/downloads # Persistent storage for downloaded media
