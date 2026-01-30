@@ -22,18 +22,19 @@ services:
     volumes:
       - /mnt/nas4/dockers/n8n/data_postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -h localhost -U n8nlocal -d n8n']
+      # Use 127.0.0.1 to bypass potential DNS resolution delays during startup
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U n8nlocal -d n8n']
       interval: 10s
       timeout: 5s
       retries: 5
+      # Give the DB 15 seconds to initialize on the NAS before counting failures
+      start_period: 15s
 
-  # --- NEW: External Python Task Runner ---
   n8n-python-runner:
     image: n8nio/n8n-python-task-runner:latest
     networks:
       - n8n_network
     environment:
-      # This token must match the one in the n8n service below
       - N8N_RUNNER_AUTH_TOKEN=secret-token-123-replace-me
     deploy:
       placement:
@@ -75,14 +76,19 @@ services:
       
       # --- Database & Auth ---
       - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=n8nlocal
+      - N8N_BASIC_AUTH_USER=${DBUSER}
       - N8N_BASIC_AUTH_PASSWORD=${DBPASSWORD}
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_DATABASE=${DBUSER}
+      - DB_POSTGRESDB_DATABASE=n8n
       - DB_POSTGRESDB_USER=n8nlocal
-      - DB_POSTGRESDB_PASSWORD=${DBPASSWORD}
+      - DB_POSTGRESDB_PASSWORD=Temp4now
       - DB_POSTGRESDB_PORT=5432
+      
+      # --- FIX: Connection Resilience ---
+      # This tells n8n to keep trying to connect if the DB isn't ready yet
+      - DB_POSTGRESDB_RETRY_ATTEMPTS=20
+      - DB_POSTGRESDB_RETRY_DELAY=5000
       
       # --- Optimization ---
       - EXECUTIONS_DATA_PRUNE=true
