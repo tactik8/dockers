@@ -1,0 +1,99 @@
+version: '3.8'
+
+networks:
+  n8n_network:
+    driver: overlay
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    networks:
+      - n8n_network
+    deploy:
+      placement:
+        constraints:
+          - "node.role == worker"
+      restart_policy:
+        condition: on-failure
+    environment:
+      - POSTGRES_USER=${DBUSER}
+      - POSTGRES_PASSWORD=${DBPASSWORD}
+      - POSTGRES_DB=n8n
+    volumes:
+      - /mnt/nas4/dockers/n8n/data_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U n8nlocal -d n8n']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- NEW: External Python Task Runner ---
+  n8n-python-runner:
+    image: n8nio/n8n-python-task-runner:latest
+    networks:
+      - n8n_network
+    environment:
+      # This token must match the one in the n8n service below
+      - N8N_RUNNER_AUTH_TOKEN=secret-token-123-replace-me
+    deploy:
+      placement:
+        constraints:
+          - "node.role == worker"
+      restart_policy:
+        condition: on-failure
+
+  n8n:
+    image: n8nio/n8n:latest
+    networks:
+      - n8n_network
+    hostname: n8n-production-server
+    user: root
+    ports:
+      - "5678:5678"
+    deploy:
+      placement:
+        constraints:
+          - "node.role == worker"
+      restart_policy:
+        condition: on-failure
+    environment:
+      - N8N_ENCRYPTION_KEY=your-very-secure-fixed-string1
+      - N8N_PORT=5678
+      - GENERIC_TIMEZONE=America/New_York
+      - N8N_EDITOR_BASE_URL=https://n8n.tactik8.com
+      - WEBHOOK_URL=https://n8n.tactik8.com
+      - N8N_PROTOCOL=https
+      - N8N_SECURE_COOKIE=false
+      
+      # --- Task Runner Configuration ---
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNER_AUTH_TOKEN=secret-token-123-replace-me
+      - N8N_RUNNER_TASK_PYTHON_URL=http://n8n-python-runner:7474
+      
+      # --- License Management ---
+      - N8N_LICENSE_DETACH_FLOATING_ON_SHUTDOWN=true
+      
+      # --- Database & Auth ---
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=n8nlocal
+      - N8N_BASIC_AUTH_PASSWORD=${DBPASSWORD}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_DATABASE=${DBUSER}
+      - DB_POSTGRESDB_USER=n8nlocal
+      - DB_POSTGRESDB_PASSWORD=${DBPASSWORD}
+      - DB_POSTGRESDB_PORT=5432
+      
+      # --- Optimization ---
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=72
+      - NODE_FUNCTION_ALLOW_EXTERNAL=*
+      - N8N_NODE_FUNCTION_ALLOW_BUILTIN=*
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      - N8N_REINSTALL_MISSING_PACKAGES=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+    volumes:
+      - /mnt/nas4/dockers/n8n/data_n8n:/home/node/.n8n
+    depends_on:
+      - postgres
+      - n8n-python-runner
