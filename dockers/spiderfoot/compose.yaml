@@ -1,0 +1,35 @@
+services:
+  gluetun4:
+    image: qmcgaw/gluetun
+    container_name: gluetun4
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 8084:5001 # Maps host 8084 to Gluetun's internal 5001 (where Spiderfoot lives)
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${PROTONVPNKEY}
+      - VPN_PORT_FORWARDING=on
+      - VPN_PORT_FORWARDING_PROVIDER=protonvpn
+      - SERVER_COUNTRIES=Canada
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/16,172.16.0.0/12
+      - FIREWALL_INPUT_PORTS=5001
+      - TZ=America/Toronto
+    restart: always
+
+  spiderfoot:
+    image: josaorg/spiderfoot
+    container_name: spiderfoot
+    # MUST match the container_name of your gluetun service
+    network_mode: "container:gluetun4"
+    environment:
+      - SPIDERFOOT_LISTEN=0.0.0.0
+      - SPIDERFOOT_PORT=5001
+    volumes:
+      - /mnt/nas4/dockers/spiderfoot/data:/home/spiderfoot/.spiderfoot
+    depends_on:
+      - gluetun4
+    restart: always
