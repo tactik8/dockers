@@ -1,0 +1,12 @@
+services:
+  nuclei:
+    image: projectdiscovery/nuclei:latest
+    container_name: nuclei-scanner
+    volumes:
+      # Syncs your local 'results' folder to see scan outputs
+      - /mnt/nas4/dockers/nuclei/results:/root/nuclei-output
+      # Persists templates so you don't have to re-download them every time
+      - /mnt/nas4/dockers/nuclei/nuclei-templates:/root/nuclei-templates
+    # This keeps the container from immediately exiting so you can 'exec' into it
+    entrypoint: ["/bin/sh", "-c", "nuclei -update-templates && tail -f /dev/null"]
+    restart: unless-stopped
