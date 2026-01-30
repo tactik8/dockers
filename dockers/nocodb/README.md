@@ -1,26 +1,27 @@
-### NocoDB Docker Swarm Deployment Instructions
+## NocoDB Docker Swarm Deployment Instructions
 
-1.  **Create Volume Directory**: Before deploying the stack, ensure the persistent storage directory exists on your Docker host. Run the following command:
+1.  **Create Volume Directories:**
+    Before deploying, create the necessary directories on your Proxmox host (or NFS mount) for persistent storage:
     ```bash
     mkdir -p /mnt/nas4/dockers/nocodb/data
+    mkdir -p /mnt/nas4/dockers/nocodb/postgres
     ```
 
-2.  **Save the Compose File**: Save the provided `compose_content` as `nocodb.yaml` (or any other `.yaml` file name).
+2.  **Configure `compose.yaml`:**
+    Open the generated `compose.yaml` file and configure the following parameters:
+    *   **NocoDB Port (`ports`):** By default, NocoDB is exposed on port `8080`. If you need to use a different host port, modify `- "8080:8080"` in the `nocodb` service. For example, to use port `8081` on the host: `- "8081:8080"`.
+    *   **PostgreSQL User (`POSTGRES_USER`):** Change `postgres_user` to a strong, unique username for your PostgreSQL database.
+    *   **PostgreSQL Password (`POSTGRES_PASSWORD`):** **CRITICAL!** Change `postgres_password` to a very strong, unique password.
+    *   **PostgreSQL Database Name (`POSTGRES_DB`):** You can change `nocodb_db` if you wish, but ensure it matches in both `postgres` and `nocodb` services.
+    *   **NocoDB Database Connection (`NC_DB`):** Update the `NC_DB` environment variable in the `nocodb` service to reflect your chosen `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`. The format is `pg://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>`.
+    *   **Swarm Placement Constraints (`node.labels.nocodb == true`):** The `placement` section in each service specifies that the service should run on a node with the label `nocodb=true`. Adjust this label according to your Docker Swarm node labeling strategy, or remove the `placement` section if you don't use specific node constraints.
 
-3.  **Configure Parameters**: Review the `environment` section under the `nocodb` service in the `nocodb.yaml` file. You may want to:
-    *   Set initial `NC_ROOT_EMAIL` and `NC_ROOT_PASSWORD` for the NocoDB administrator user. If not set, NocoDB will prompt you to create an account on first access.
-    *   Configure external database connection details (e.g., `NC_DB`, `NC_PG_HOST`, etc.) if you wish to use a database other than the default SQLite (which is stored in the `nocodb_data` volume).
-
-4.  **Deploy the Stack**: Navigate to the directory where you saved `nocodb.yaml` and deploy the stack using Docker Swarm:
+3.  **Deploy the Stack:**
+    Navigate to the directory containing your `compose.yaml` file and deploy the stack using Docker Swarm:
     ```bash
-    docker stack deploy -c nocodb.yaml nocodb
+    docker stack deploy -c compose.yaml nocodb
     ```
 
-5.  **Access NocoDB**: Once deployed, NocoDB will be accessible via your Docker host's IP address on port `8080`. For example, `http://YOUR_DOCKER_HOST_IP:8080`.
+4.  **Access NocoDB:**
+    Once deployed, NocoDB should be accessible in your web browser at `http://<YOUR_DOCKER_SWARM_MANAGER_IP>:<NocoDB_Port>`.
 
-6.  **Verify Deployment**: You can check the status of your stack and services with:
-    ```bash
-    docker stack ls
-    docker stack services nocodb
-    docker service ps nocodb_nocodb
-    ```
