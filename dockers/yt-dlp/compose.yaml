@@ -1,0 +1,21 @@
+services:
+  yt-dlp-webui:
+    image: marcobaobao/yt-dlp-webui
+    deploy:
+      placement:
+        constraints:
+          - "node.role == worker"
+    ports:
+      - 3033:3033
+    volumes:
+      - /mnt/nas4/media2/videos:/downloads
+      - /mnt/nas4/dockers/yt-dlp/config:/config
+    environment:
+      - HTTP_PROXY=http://192.168.2.252:8888
+      - HTTPS_PROXY=http://192.168.2.252:8888
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3033"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
