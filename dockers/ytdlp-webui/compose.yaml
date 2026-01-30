@@ -1,0 +1,39 @@
+
+version: '3.8'
+
+# Docker Swarm stack for YT-DLP Web UI
+# This stack provides a web interface for yt-dlp, allowing you to easily download videos.
+
+services:
+  ytdlp-webui:
+    # Image for the YT-DLP Web UI
+    image: tzahi12345/yt-dlp-webui:latest
+    container_name: ytdlp-webui
+    # Deploy in swarm mode with 1 replica
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    ports:
+      # Map container port 8080 to host port 8080 (can be changed)
+      - "8080:8080"
+    volumes:
+      # Persistent storage for configuration files
+      - /mnt/nas4/dockers/ytdlp-webui/config:/app/config
+      # Persistent storage for downloaded files
+      - /mnt/nas4/dockers/ytdlp-webui/downloads:/app/downloads
+    environment:
+      # Set the timezone for the container (Eastern Canada)
+      - TZ=America/Toronto
+      # Set the language for the container
+      - LANG=en_US.UTF-8
+      # User ID and Group ID (uncomment and adjust if needed for permissions)
+      # - PUID=1000
+      # - PGID=1000
+    networks:
+      - ytdlp-webui-net
+
+networks:
+  ytdlp-webui-net:
+    # Use overlay network for swarm mode
+    driver: overlay
