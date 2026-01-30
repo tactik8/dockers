@@ -1,0 +1,45 @@
+
+version: '3.8'
+
+services:
+  nocodb:
+    image: nocodb/nocodb:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persistent storage for NocoDB data
+      - nocodb_data:/usr/app/data/
+    environment:
+      - TZ=America/Montreal
+      - LANG=en-us
+      # --- NocoDB Configuration Parameters ---
+      # Uncooment and configure the following to set the initial root user credentials
+      # - NC_ROOT_EMAIL=admin@example.com
+      # - NC_ROOT_PASSWORD=strong_password
+      #
+      # Uncomment and configure the following if you want to connect to an external database (e.g., PostgreSQL)
+      # - NC_DB=pg
+      # - NC_PG_HOST=db_host
+      # - NC_PG_PORT=5432
+      # - NC_PG_USER=db_user
+      # - NC_PG_PASSWORD=db_password
+      # - NC_PG_DATABASE=nocodb
+      # --- End NocoDB Configuration Parameters ---
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    networks:
+      - nocodb_network
+
+volumes:
+  nocodb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/nas4/dockers/nocodb/data
+
+networks:
+  nocodb_network:
+    driver: overlay
