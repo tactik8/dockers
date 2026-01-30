@@ -1,0 +1,29 @@
+
+version: '3.8'
+
+services:
+  yt-dlp-webui:
+    image: tzahi12345/yt-dlp-webui:latest
+    container_name: yt-dlp-webui
+    ports:
+      - "8080:8080" # Host_PORT:Container_PORT - Change HOST_PORT if needed
+    volumes:
+      - /mnt/nas4/dockers/yt-dlp-webui/config:/app/config # Configuration files
+      - /mnt/nas4/dockers/yt-dlp-webui/downloads:/app/downloads # Downloaded media files
+    environment:
+      - PUID=1000 # User ID, change to match your user's UID (e.g., `id -u youruser`)
+      - PGID=1000 # Group ID, change to match your user's GID (e.g., `id -g youruser`)
+      - TZ=Europe/Paris # Your timezone, e.g., "America/New_York"
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+# Optional: Define volumes if you want Docker to manage them rather than host paths
+# volumes:
+#   yt-dlp-webui_config:
+#   yt-dlp-webui_downloads:
