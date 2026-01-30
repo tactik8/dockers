@@ -1,0 +1,130 @@
+
+version: '3.8'
+
+# Stack name: shelfmark
+
+services:
+  # PostgreSQL database service
+  db:
+    image: postgres:14-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shelfmark} # Default to 'shelfmark', can be overridden
+      POSTGRES_USER: ${POSTGRES_USER:-shelfmark_user} # Default user, can be overridden
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # !!! REQUIRED: SET A STRONG PASSWORD !!!
+      TZ: America/Toronto
+      LANG: en_US.UTF-8
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M # Example memory limit
+        reservations:
+          memory: 256M # Example memory reservation
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis caching and job queue service
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+    environment:
+      TZ: America/Toronto
+      LANG: en_US.UTF-8
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  # PHP-FPM application service for Shelfmark
+  shelfmark_app:
+    # Uses a generic PHP-FPM image and mounts the application code.
+    # User needs to ensure PHP dependencies are installed via Composer on the host
+    # or build a custom image with dependencies included.
+    image: php:8.1-fpm-alpine
+    restart: always
+    volumes:
+      - app_code:/var/www/html # Mount Shelfmark application code
+    environment:
+      # Database connection details for Shelfmark application
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-shelfmark}
+      DB_USERNAME: ${POSTGRES_USER:-shelfmark_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # Redis connection details for Shelfmark application
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # Application specific environment variables
+      APP_URL: ${APP_URL:-http://localhost} # Change to your actual domain
+      APP_ENV: production # Set to 'local' for development
+      APP_KEY: ${APP_KEY} # !!! REQUIRED: GENERATE AND SET YOUR APPLICATION KEY !!!
+      TZ: America/Toronto
+      LANG: en_US.UTF-8
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Nginx web server to serve the Shelfmark application
+  nginx:
+    image: nginx:stable-alpine
+    restart: always
+    ports:
+      - "80:80" # Map host port 80 to container port 80
+      # - "443:443" # Uncomment and configure for HTTPS if you have certificates
+    volumes:
+      - app_code:/var/www/html:ro # Read-only mount of application code
+      - nginx_conf:/etc/nginx/conf.d:ro # Mount Nginx configuration
+    depends_on:
+      shelfmark_app:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+# Docker Swarm volumes, mapped to host directories for persistence
+volumes:
+  db_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /mnt/nas4/dockers/shelfmark/db_data
+      o: bind
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /mnt/nas4/dockers/shelfmark/redis_data
+      o: bind
+  app_code:
+    driver: local
+    driver_opts:
+      type: none
+      device: /mnt/nas4/dockers/shelfmark/app_code
+      o: bind
+  nginx_conf:
+    driver: local
+    driver_opts:
+      type: none
+      device: /mnt/nas4/dockers/shelfmark/nginx_conf
+      o: bind
