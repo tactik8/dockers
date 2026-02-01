@@ -1,0 +1,1 @@
+Your request was empty. Please provide details about the Docker stack you want to create (e.g., service name, image, ports, persistent storage requirements).
