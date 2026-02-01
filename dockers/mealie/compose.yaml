@@ -1,0 +1,56 @@
+
+version: "3.8"
+
+# Docker Compose file for Mealie
+# For more information, visit: https://mealie.io/docs/installation/docker/
+
+services:
+  mealie:
+    image: hkotel/mealie:latest # Consider pinning to a specific version, e.g., hkotel/mealie:v1.0.0
+    ports:
+      - "9000:9000" # Mealie web interface
+    environment:
+      - TZ=America/Toronto # Eastern Canada timezone
+      - MEALIE_DATA_DIR=/app/data
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER} # *** CONFIGURE THIS ***
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD} # *** CONFIGURE THIS ***
+      - POSTGRES_DB=${POSTGRES_DB} # *** CONFIGURE THIS ***
+      - SECRET_KEY=${SECRET_KEY} # *** CONFIGURE THIS *** - Generate a strong, random key
+      - ALLOW_SIGNUP=true # Set to false after initial user creation if desired
+      - API_AUTO_DOCS=true
+      - RECIPE_AUTO_SYNC=true
+    volumes:
+      - /mnt/nas4/dockers/mealie/data:/app/data # Persistent storage for Mealie data
+    depends_on:
+      - db
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - mealie_network
+
+  db:
+    image: postgres:13-alpine # Consider pinning to a specific version, e.g., postgres:13.10-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER} # *** CONFIGURE THIS *** - Must match Mealie's configuration
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD} # *** CONFIGURE THIS *** - Must match Mealie's configuration
+      - POSTGRES_DB=${POSTGRES_DB} # *** CONFIGURE THIS *** - Must match Mealie's configuration
+      - TZ=America/Toronto # Eastern Canada timezone
+    volumes:
+      - /mnt/nas4/dockers/mealie/postgres:/var/lib/postgresql/data # Persistent storage for PostgreSQL data
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - mealie_network
+
+networks:
+  mealie_network:
+    driver: overlay
+    attachable: true # Allows standalone containers to join this network, if needed
