@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  memos:
+    image: usememos/memos:latest
+    container_name: memos
+    # Expose port for Memos
+    # Change HOST_PORT if 5230 is already in use on your host
+    ports:
+      - "5230:5230" # HOST_PORT:CONTAINER_PORT
+    
+    volumes:
+      # Persistent data stored on the NFS share
+      - /mnt/nas4/dockers/memos/data:/var/opt/memos
+    
+    environment:
+      # Timezone for the container, set to Eastern Canada
+      - TZ=America/Toronto
+    
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
